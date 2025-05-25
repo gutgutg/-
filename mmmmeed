@@ -8,40 +8,81 @@ local player = Players.LocalPlayer
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TeleportGUI"
 screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 340, 0, 140)
-frame.Position = UDim2.new(0, 10, 0, 10)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.Size = UDim2.new(0, 360, 0, 200)
+frame.Position = UDim2.new(0, 20, 0, 20)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
 frame.Parent = screenGui
 
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = frame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -60, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.Text = "Телепорт GUI"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 20
+titleLabel.BackgroundTransparency = 1
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 30, 1, 0)
+closeButton.Position = UDim2.new(1, -30, 0, 0)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+closeButton.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 20
+closeButton.Parent = titleBar
+
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 30, 1, 0)
+minimizeButton.Position = UDim2.new(1, -60, 0, 0)
+minimizeButton.Text = "-"
+minimizeButton.TextColor3 = Color3.new(1, 1, 1)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+minimizeButton.Font = Enum.Font.SourceSansBold
+minimizeButton.TextSize = 20
+minimizeButton.Parent = titleBar
+
+local contentFrame = Instance.new("Frame")
+contentFrame.Size = UDim2.new(1, 0, 1, -30)
+contentFrame.Position = UDim2.new(0, 0, 0, 30)
+contentFrame.BackgroundTransparency = 1
+contentFrame.Parent = frame
+
 local toggleLocationsBtn = Instance.new("TextButton")
-toggleLocationsBtn.Size = UDim2.new(0, 340, 0, 30)
-toggleLocationsBtn.Position = UDim2.new(0, 0, 0, 0)
+toggleLocationsBtn.Size = UDim2.new(1, -20, 0, 30)
+toggleLocationsBtn.Position = UDim2.new(0, 10, 0, 10)
 toggleLocationsBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
 toggleLocationsBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleLocationsBtn.Font = Enum.Font.SourceSansBold
-toggleLocationsBtn.TextSize = 22
+toggleLocationsBtn.TextSize = 18
 toggleLocationsBtn.Text = "Показать/Скрыть локации"
-toggleLocationsBtn.Parent = frame
+toggleLocationsBtn.Parent = contentFrame
 
-local teleportToPlayerBtn = Instance.new("TextButton")
-teleportToPlayerBtn.Size = UDim2.new(0, 340, 0, 30)
-teleportToPlayerBtn.Position = UDim2.new(0, 0, 0, 30)
-teleportToPlayerBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
-teleportToPlayerBtn.TextColor3 = Color3.new(1, 1, 1)
-teleportToPlayerBtn.Font = Enum.Font.SourceSansBold
-teleportToPlayerBtn.TextSize = 22
+local teleportToPlayerBtn = toggleLocationsBtn:Clone()
+teleportToPlayerBtn.Position = UDim2.new(0, 10, 0, 50)
 teleportToPlayerBtn.Text = "Телепорт к игроку"
-teleportToPlayerBtn.Parent = frame
+teleportToPlayerBtn.Parent = contentFrame
 
 local locationsFrame = Instance.new("Frame")
-locationsFrame.Size = UDim2.new(0, 340, 0, 80)
-locationsFrame.Position = UDim2.new(0, 0, 0, 60)
-locationsFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+locationsFrame.Size = UDim2.new(1, -20, 0, 80)
+locationsFrame.Position = UDim2.new(0, 10, 0, 90)
+locationsFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 locationsFrame.Visible = false
-locationsFrame.Parent = frame
+locationsFrame.Parent = contentFrame
 
 local locations = {
     {Name = "Мерчант", Pos = Vector3.new(-705, -25, -332)},
@@ -68,7 +109,7 @@ for i, loc in ipairs(locations) do
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 0, 16)
     btn.Position = UDim2.new(0, 0, 0, (i-1)*16)
-    btn.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 100, 60)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.SourceSans
     btn.TextSize = 14
@@ -77,8 +118,9 @@ for i, loc in ipairs(locations) do
 
     btn.MouseButton1Click:Connect(function()
         local character = player.Character
-        if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-        smoothTeleport(character.HumanoidRootPart, loc.Pos, 4)
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            smoothTeleport(character.HumanoidRootPart, loc.Pos, 4)
+        end
     end)
 end
 
@@ -86,13 +128,12 @@ toggleLocationsBtn.MouseButton1Click:Connect(function()
     locationsFrame.Visible = not locationsFrame.Visible
 end)
 
--- Телепорт к игроку (GUI с текстбоксом и кнопкой)
 local teleportPlayerFrame = Instance.new("Frame")
-teleportPlayerFrame.Size = UDim2.new(0, 340, 0, 60)
-teleportPlayerFrame.Position = UDim2.new(0, 0, 0, 60)
-teleportPlayerFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+teleportPlayerFrame.Size = UDim2.new(1, -20, 0, 80)
+teleportPlayerFrame.Position = UDim2.new(0, 10, 0, 180)
+teleportPlayerFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 teleportPlayerFrame.Visible = false
-teleportPlayerFrame.Parent = frame
+teleportPlayerFrame.Parent = contentFrame
 
 teleportToPlayerBtn.MouseButton1Click:Connect(function()
     teleportPlayerFrame.Visible = not teleportPlayerFrame.Visible
@@ -102,12 +143,12 @@ end)
 local textBox = Instance.new("TextBox")
 textBox.PlaceholderText = "Введите ник игрока"
 textBox.Size = UDim2.new(1, -20, 0, 30)
-textBox.Position = UDim2.new(0, 10, 0, 10)
-textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+textBox.Position = UDim2.new(0, 10, 0, 5)
+textBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 textBox.TextColor3 = Color3.new(1, 1, 1)
-textBox.ClearTextOnFocus = false
 textBox.Font = Enum.Font.SourceSans
-textBox.TextSize = 20
+textBox.TextSize = 18
+textBox.ClearTextOnFocus = false
 textBox.Parent = teleportPlayerFrame
 
 local teleportBtn = Instance.new("TextButton")
@@ -116,33 +157,32 @@ teleportBtn.Position = UDim2.new(0, 10, 0, 40)
 teleportBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
 teleportBtn.TextColor3 = Color3.new(1, 1, 1)
 teleportBtn.Font = Enum.Font.SourceSansBold
-teleportBtn.TextSize = 22
+teleportBtn.TextSize = 18
 teleportBtn.Text = "Телепортировать"
 teleportBtn.Parent = teleportPlayerFrame
 
 local infoLabel = Instance.new("TextLabel")
 infoLabel.Size = UDim2.new(1, -20, 0, 20)
-infoLabel.Position = UDim2.new(0, 10, 0, 120)
+infoLabel.Position = UDim2.new(0, 10, 1, -20)
 infoLabel.BackgroundTransparency = 1
 infoLabel.TextColor3 = Color3.new(1, 0, 0)
 infoLabel.Font = Enum.Font.SourceSansItalic
-infoLabel.TextSize = 18
+infoLabel.TextSize = 16
 infoLabel.Text = ""
 infoLabel.TextWrapped = true
-infoLabel.Parent = frame
+infoLabel.Parent = contentFrame
 
 local isTeleporting = false
 
 teleportBtn.MouseButton1Click:Connect(function()
     if isTeleporting then return end
-
     local targetName = textBox.Text:lower()
     if targetName == "" then
-        infoLabel.Text = "Пожалуйста, введите ник игрока."
+        infoLabel.Text = "Введите ник игрока."
         return
     end
 
-    local targetPlayer = nil
+    local targetPlayer
     for _, plr in pairs(Players:GetPlayers()) do
         if plr.Name:lower() == targetName then
             targetPlayer = plr
@@ -151,7 +191,7 @@ teleportBtn.MouseButton1Click:Connect(function()
     end
 
     if not targetPlayer or not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        infoLabel.Text = "Игрок не найден или его персонаж не загружен."
+        infoLabel.Text = "Игрок не найден или не загружен."
         return
     end
 
@@ -163,17 +203,24 @@ teleportBtn.MouseButton1Click:Connect(function()
 
     isTeleporting = true
     infoLabel.Text = "Телепортирую..."
-
     smoothTeleport(character.HumanoidRootPart, targetPlayer.Character.HumanoidRootPart.Position, 4)
-
     infoLabel.Text = "Телепорт завершён!"
-    wait(3)
-    infoLabel.Text = ""
-
+    task.delay(3, function() infoLabel.Text = "" end)
     isTeleporting = false
 end)
 
--- Горячая клавиша Insert для скрытия/показа GUI
+-- Swappable GUI
+local minimized = false
+minimizeButton.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    contentFrame.Visible = not minimized
+    frame.Size = minimized and UDim2.new(0, 360, 0, 30) or UDim2.new(0, 360, 0, 260)
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.Insert then
