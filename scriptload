@@ -1,0 +1,73 @@
+-- Создание GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MyScriptGUI"
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false
+
+-- Главный фрейм
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 250, 0, 200)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+-- Заголовок
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -30, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+title.Text = "Script Loader"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = mainFrame
+
+-- Кнопка закрытия
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -30, 0, 0)
+closeButton.Text = "✕"
+closeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+closeButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 20
+closeButton.Parent = mainFrame
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- Кнопка 1 — юба.lua
+local button1 = Instance.new("TextButton")
+button1.Size = UDim2.new(1, -20, 0, 50)
+button1.Position = UDim2.new(0, 10, 0, 50)
+button1.Text = "Загрузить юба.lua"
+button1.BackgroundColor3 = Color3.fromRGB(0, 122, 204)
+button1.TextColor3 = Color3.fromRGB(255, 255, 255)
+button1.Font = Enum.Font.SourceSans
+button1.TextSize = 16
+button1.Parent = mainFrame
+
+-- Кнопка 2 — mmmmeed
+local button2 = Instance.new("TextButton")
+button2.Size = UDim2.new(1, -20, 0, 50)
+button2.Position = UDim2.new(0, 10, 0, 110)
+button2.Text = "Загрузить mmmmeed"
+button2.BackgroundColor3 = Color3.fromRGB(0, 122, 204)
+button2.TextColor3 = Color3.fromRGB(255, 255, 255)
+button2.Font = Enum.Font.SourceSans
+button2.TextSize = 16
+button2.Parent = mainFrame
+
+-- Подключение функций
+button1.MouseButton1Click:Connect(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/юба.lua"))()
+end)
+
+button2.MouseButton1Click:Connect(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/mmmmeed"))()
+end)
