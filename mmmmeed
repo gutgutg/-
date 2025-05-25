@@ -1,0 +1,182 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+-- GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TeleportGUI"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 340, 0, 140)
+frame.Position = UDim2.new(0, 10, 0, 10)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+local toggleLocationsBtn = Instance.new("TextButton")
+toggleLocationsBtn.Size = UDim2.new(0, 340, 0, 30)
+toggleLocationsBtn.Position = UDim2.new(0, 0, 0, 0)
+toggleLocationsBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
+toggleLocationsBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleLocationsBtn.Font = Enum.Font.SourceSansBold
+toggleLocationsBtn.TextSize = 22
+toggleLocationsBtn.Text = "Показать/Скрыть локации"
+toggleLocationsBtn.Parent = frame
+
+local teleportToPlayerBtn = Instance.new("TextButton")
+teleportToPlayerBtn.Size = UDim2.new(0, 340, 0, 30)
+teleportToPlayerBtn.Position = UDim2.new(0, 0, 0, 30)
+teleportToPlayerBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
+teleportToPlayerBtn.TextColor3 = Color3.new(1, 1, 1)
+teleportToPlayerBtn.Font = Enum.Font.SourceSansBold
+teleportToPlayerBtn.TextSize = 22
+teleportToPlayerBtn.Text = "Телепорт к игроку"
+teleportToPlayerBtn.Parent = frame
+
+local locationsFrame = Instance.new("Frame")
+locationsFrame.Size = UDim2.new(0, 340, 0, 80)
+locationsFrame.Position = UDim2.new(0, 0, 0, 60)
+locationsFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+locationsFrame.Visible = false
+locationsFrame.Parent = frame
+
+local locations = {
+    {Name = "Мерчант", Pos = Vector3.new(-705, -25, -332)},
+    {Name = "Метро", Pos = Vector3.new(-455, 0.2, -13)},
+    {Name = "Джотаро В1 (НПС)", Pos = Vector3.new(91, -25.8, 591)},
+    {Name = "Замок Диабло", Pos = Vector3.new(600, 6.6, -67)},
+    {Name = "Парковка", Pos = Vector3.new(-61, 0.2, -696)},
+}
+
+local function smoothTeleport(hrp, targetPos, duration)
+    local startTime = tick()
+    local startPos = hrp.Position
+    while tick() - startTime < duration do
+        local elapsed = tick() - startTime
+        local alpha = elapsed / duration
+        local newPos = startPos:Lerp(targetPos, alpha)
+        hrp.CFrame = CFrame.new(newPos + Vector3.new(0, 3, 0))
+        RunService.RenderStepped:Wait()
+    end
+    hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+end
+
+for i, loc in ipairs(locations) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 16)
+    btn.Position = UDim2.new(0, 0, 0, (i-1)*16)
+    btn.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSans
+    btn.TextSize = 14
+    btn.Text = loc.Name
+    btn.Parent = locationsFrame
+
+    btn.MouseButton1Click:Connect(function()
+        local character = player.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+        smoothTeleport(character.HumanoidRootPart, loc.Pos, 4)
+    end)
+end
+
+toggleLocationsBtn.MouseButton1Click:Connect(function()
+    locationsFrame.Visible = not locationsFrame.Visible
+end)
+
+-- Телепорт к игроку (GUI с текстбоксом и кнопкой)
+local teleportPlayerFrame = Instance.new("Frame")
+teleportPlayerFrame.Size = UDim2.new(0, 340, 0, 60)
+teleportPlayerFrame.Position = UDim2.new(0, 0, 0, 60)
+teleportPlayerFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+teleportPlayerFrame.Visible = false
+teleportPlayerFrame.Parent = frame
+
+teleportToPlayerBtn.MouseButton1Click:Connect(function()
+    teleportPlayerFrame.Visible = not teleportPlayerFrame.Visible
+    locationsFrame.Visible = false
+end)
+
+local textBox = Instance.new("TextBox")
+textBox.PlaceholderText = "Введите ник игрока"
+textBox.Size = UDim2.new(1, -20, 0, 30)
+textBox.Position = UDim2.new(0, 10, 0, 10)
+textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+textBox.TextColor3 = Color3.new(1, 1, 1)
+textBox.ClearTextOnFocus = false
+textBox.Font = Enum.Font.SourceSans
+textBox.TextSize = 20
+textBox.Parent = teleportPlayerFrame
+
+local teleportBtn = Instance.new("TextButton")
+teleportBtn.Size = UDim2.new(1, -20, 0, 30)
+teleportBtn.Position = UDim2.new(0, 10, 0, 40)
+teleportBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
+teleportBtn.TextColor3 = Color3.new(1, 1, 1)
+teleportBtn.Font = Enum.Font.SourceSansBold
+teleportBtn.TextSize = 22
+teleportBtn.Text = "Телепортировать"
+teleportBtn.Parent = teleportPlayerFrame
+
+local infoLabel = Instance.new("TextLabel")
+infoLabel.Size = UDim2.new(1, -20, 0, 20)
+infoLabel.Position = UDim2.new(0, 10, 0, 120)
+infoLabel.BackgroundTransparency = 1
+infoLabel.TextColor3 = Color3.new(1, 0, 0)
+infoLabel.Font = Enum.Font.SourceSansItalic
+infoLabel.TextSize = 18
+infoLabel.Text = ""
+infoLabel.TextWrapped = true
+infoLabel.Parent = frame
+
+local isTeleporting = false
+
+teleportBtn.MouseButton1Click:Connect(function()
+    if isTeleporting then return end
+
+    local targetName = textBox.Text:lower()
+    if targetName == "" then
+        infoLabel.Text = "Пожалуйста, введите ник игрока."
+        return
+    end
+
+    local targetPlayer = nil
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr.Name:lower() == targetName then
+            targetPlayer = plr
+            break
+        end
+    end
+
+    if not targetPlayer or not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        infoLabel.Text = "Игрок не найден или его персонаж не загружен."
+        return
+    end
+
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        infoLabel.Text = "Ваш персонаж не найден."
+        return
+    end
+
+    isTeleporting = true
+    infoLabel.Text = "Телепортирую..."
+
+    smoothTeleport(character.HumanoidRootPart, targetPlayer.Character.HumanoidRootPart.Position, 4)
+
+    infoLabel.Text = "Телепорт завершён!"
+    wait(3)
+    infoLabel.Text = ""
+
+    isTeleporting = false
+end)
+
+-- Горячая клавиша Insert для скрытия/показа GUI
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.Insert then
+        screenGui.Enabled = not screenGui.Enabled
+    end
+end)
