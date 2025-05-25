@@ -1,0 +1,140 @@
+-- GUI создание
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "AnimationPlayerGUI"
+
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 300, 0, 190)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -95)
+Frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+
+-- Кнопка Закрыть
+local CloseBtn = Instance.new("TextButton", Frame)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Position = UDim2.new(1, -28, 0, 4)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.new(1, 1, 1)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.TextSize = 16
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Кнопка Свернуть
+local MinBtn = Instance.new("TextButton", Frame)
+MinBtn.Size = UDim2.new(0, 24, 0, 24)
+MinBtn.Position = UDim2.new(1, -56, 0, 4)
+MinBtn.Text = "-"
+MinBtn.TextColor3 = Color3.new(1, 1, 1)
+MinBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+MinBtn.Font = Enum.Font.SourceSansBold
+MinBtn.TextSize = 16
+
+local contentVisible = true
+local collapsible = {}
+
+-- Метка
+local Label = Instance.new("TextLabel", Frame)
+Label.Position = UDim2.new(0, 10, 0, 40)
+Label.Size = UDim2.new(1, -20, 0, 20)
+Label.Text = "Введите AnimationId (только цифры):"
+Label.TextColor3 = Color3.new(1,1,1)
+Label.BackgroundTransparency = 1
+Label.TextSize = 16
+Label.Font = Enum.Font.SourceSans
+table.insert(collapsible, Label)
+
+-- Поле ввода
+local TextBox = Instance.new("TextBox", Frame)
+TextBox.Position = UDim2.new(0, 10, 0, 65)
+TextBox.Size = UDim2.new(1, -20, 0, 30)
+TextBox.PlaceholderText = "например: 507771019"
+TextBox.Text = ""
+TextBox.TextSize = 16
+TextBox.Font = Enum.Font.SourceSans
+TextBox.TextColor3 = Color3.new(1,1,1)
+TextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+table.insert(collapsible, TextBox)
+
+-- Игровая логика
+local lastTrack = nil
+
+-- Кнопка Запустить
+local PlayButton = Instance.new("TextButton", Frame)
+PlayButton.Position = UDim2.new(0, 10, 0, 105)
+PlayButton.Size = UDim2.new(1, -20, 0, 30)
+PlayButton.Text = "▶ Запустить анимацию"
+PlayButton.Font = Enum.Font.SourceSansBold
+PlayButton.TextSize = 16
+PlayButton.TextColor3 = Color3.new(1, 1, 1)
+PlayButton.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
+table.insert(collapsible, PlayButton)
+
+PlayButton.MouseButton1Click:Connect(function()
+    local id = TextBox.Text:match("%d+")
+    if not id then
+        warn("Введите только цифры!")
+        return
+    end
+    local animationId = "rbxassetid://" .. id
+
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+
+    -- Удалим Animate (если есть)
+    local animate = character:FindFirstChild("Animate")
+    if animate then
+        animate:Destroy()
+    end
+
+    -- Остановим старую анимацию
+    if lastTrack then
+        lastTrack:Stop()
+    end
+
+    -- Новая анимация
+    local anim = Instance.new("Animation")
+    anim.AnimationId = animationId
+
+    if animator then
+        local track = animator:LoadAnimation(anim)
+        track.Looped = true
+        track:Play()
+        lastTrack = track
+    else
+        warn("Animator не найден")
+    end
+end)
+
+-- Кнопка Остановить
+local StopButton = Instance.new("TextButton", Frame)
+StopButton.Position = UDim2.new(0, 10, 0, 145)
+StopButton.Size = UDim2.new(1, -20, 0, 30)
+StopButton.Text = "⏹ Остановить анимацию"
+StopButton.Font = Enum.Font.SourceSansBold
+StopButton.TextSize = 16
+StopButton.TextColor3 = Color3.new(1, 1, 1)
+StopButton.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+table.insert(collapsible, StopButton)
+
+StopButton.MouseButton1Click:Connect(function()
+    if lastTrack then
+        lastTrack:Stop()
+        lastTrack = nil
+    end
+end)
+
+-- Обработчик свернуть
+MinBtn.MouseButton1Click:Connect(function()
+    contentVisible = not contentVisible
+    for _, ui in pairs(collapsible) do
+        ui.Visible = contentVisible
+    end
+    Frame.Size = contentVisible and UDim2.new(0, 300, 0, 190) or UDim2.new(0, 300, 0, 32)
+end)
