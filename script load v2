@@ -6,8 +6,8 @@ screenGui.ResetOnSpawn = false
 
 -- Главный фрейм
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 250, 0, 260)
-mainFrame.Position = UDim2.new(0.5, -125, 0.5, -130)
+mainFrame.Size = UDim2.new(0, 250, 0, 320)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -160)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -41,48 +41,25 @@ closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
--- Кнопка 1 — юба.lua
-local button1 = Instance.new("TextButton")
-button1.Size = UDim2.new(1, -20, 0, 50)
-button1.Position = UDim2.new(0, 10, 0, 50)
-button1.Text = "Загрузить юба.lua"
-button1.BackgroundColor3 = Color3.fromRGB(0, 122, 204)
-button1.TextColor3 = Color3.fromRGB(255, 255, 255)
-button1.Font = Enum.Font.SourceSans
-button1.TextSize = 16
-button1.Parent = mainFrame
+-- Создание функции для кнопок
+local function createButton(parent, yPos, text, url)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, -20, 0, 50)
+    button.Position = UDim2.new(0, 10, 0, yPos)
+    button.Text = text
+    button.BackgroundColor3 = Color3.fromRGB(0, 122, 204)
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Font = Enum.Font.SourceSans
+    button.TextSize = 16
+    button.Parent = parent
+    button.MouseButton1Click:Connect(function()
+        loadstring(game:HttpGet(url))()
+    end)
+end
 
--- Кнопка 2 — mmmmeed
-local button2 = Instance.new("TextButton")
-button2.Size = UDim2.new(1, -20, 0, 50)
-button2.Position = UDim2.new(0, 10, 0, 110)
-button2.Text = "Загрузить mmmmeed"
-button2.BackgroundColor3 = Color3.fromRGB(0, 122, 204)
-button2.TextColor3 = Color3.fromRGB(255, 255, 255)
-button2.Font = Enum.Font.SourceSans
-button2.TextSize = 16
-button2.Parent = mainFrame
-
--- Кнопка 3 — аним
-local button3 = Instance.new("TextButton")
-button3.Size = UDim2.new(1, -20, 0, 50)
-button3.Position = UDim2.new(0, 10, 0, 170)
-button3.Text = "Загрузить аним"
-button3.BackgroundColor3 = Color3.fromRGB(0, 122, 204)
-button3.TextColor3 = Color3.fromRGB(255, 255, 255)
-button3.Font = Enum.Font.SourceSans
-button3.TextSize = 16
-button3.Parent = mainFrame
-
--- Подключение функций
-button1.MouseButton1Click:Connect(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/юба.lua"))()
-end)
-
-button2.MouseButton1Click:Connect(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/mmmmeed"))()
-end)
-
-button3.MouseButton1Click:Connect(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/аним"))()
-end)
+-- Кнопки
+createButton(mainFrame, 50, "Загрузить юба.lua", "https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/юба.lua")
+createButton(mainFrame, 110, "Загрузить mmmmeed", "https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/mmmmeed")
+createButton(mainFrame, 170, "Загрузить аним", "https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/аним")
+createButton(mainFrame, 230, "Загрузить pose", "https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/pose")
+createButton(mainFrame, 290, "Загрузить noclip", "https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/noclip")
