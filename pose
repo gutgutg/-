@@ -1,0 +1,116 @@
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
+local replicated = game:GetService("ReplicatedStorage")
+
+local animations = {
+    { name = "T-Pose", path = replicated.Anims.Poses["T-Pose"] },
+    { name = "Indian Guy", path = replicated.Anims.Poses["Indian Guy"] },
+    { name = "Edgelord Status", path = replicated.Anims.Poses["Edgelord Status"] },
+    { name = "Pose 5", path = replicated.Anims.Poses["Pose 5"] },
+    { name = "Abbacchio", path = workspace.Dialogues.Abbacchio.Humanoid.Animation },
+    { name = "Abbacchio's Partner", path = workspace.Dialogues["Abbacchio's Partner [Lvl 15+]"].Humanoid.Animation },
+    { name = "Alex", path = workspace.Dialogues.Alex.Humanoid.Animation },
+    { name = "Brad", path = workspace.Dialogues.Brad.Humanoid.Animation },
+    { name = "Dio", path = workspace.Dialogues["Dio [Lvl. 35+]"].Humanoid.Animation },
+    { name = "Doppio", path = workspace.Dialogues["Doppio [Lvl. 30+]"].Humanoid.Animation },
+    { name = "Enya The Hag", path = workspace.Dialogues["Enya The Hag"].Humanoid.Animation },
+    { name = "Fugo", path = workspace.Dialogues.Fugo.Humanoid.Animation },
+    { name = "Giorno", path = workspace.Dialogues.Giorno.Humanoid.Animation },
+    { name = "Greed, The Shadow of Fang", path = workspace.Dialogues["Greed, The Shadow of Fang"].Humanoid.Animation }
+}
+
+local currentAnim = nil
+
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "PoseGUI"
+gui.ResetOnSpawn = false
+
+local fullHeight = #animations * 35 + 100
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 260, 0, fullHeight)
+mainFrame.Position = UDim2.new(0, 100, 0, 100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = gui
+
+local header = Instance.new("Frame", mainFrame)
+header.Size = UDim2.new(1, 0, 0, 40)
+header.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+
+local title = Instance.new("TextLabel", header)
+title.Size = UDim2.new(1, -80, 1, 0)
+title.Position = UDim2.new(0, 5, 0, 0)
+title.Text = "Pose Menu"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.BackgroundTransparency = 1
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Font = Enum.Font.SourceSans
+title.TextSize = 20
+
+local closeBtn = Instance.new("TextButton", header)
+closeBtn.Size = UDim2.new(0, 30, 1, 0)
+closeBtn.Position = UDim2.new(1, -35, 0, 0)
+closeBtn.Text = "X"
+closeBtn.BackgroundColor3 = Color3.fromRGB(100, 30, 30)
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+
+local minimizeBtn = Instance.new("TextButton", header)
+minimizeBtn.Size = UDim2.new(0, 30, 1, 0)
+minimizeBtn.Position = UDim2.new(1, -70, 0, 0)
+minimizeBtn.Text = "-"
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
+
+local panel = Instance.new("Frame", mainFrame)
+panel.Size = UDim2.new(1, 0, 1, -40)
+panel.Position = UDim2.new(0, 0, 0, 40)
+panel.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+panel.Visible = true
+
+for i, data in ipairs(animations) do
+    local btn = Instance.new("TextButton", panel)
+    btn.Size = UDim2.new(1, -20, 0, 30)
+    btn.Position = UDim2.new(0, 10, 0, (i - 1) * 35 + 5)
+    btn.Text = data.name
+    btn.TextScaled = true
+    btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSans
+
+    btn.MouseButton1Click:Connect(function()
+        if currentAnim then currentAnim:Stop() end
+        local anim = Instance.new("Animation")
+        anim.AnimationId = data.path.AnimationId
+        currentAnim = humanoid:LoadAnimation(anim)
+        currentAnim:Play()
+    end)
+end
+
+local stopBtn = Instance.new("TextButton", panel)
+stopBtn.Size = UDim2.new(1, -20, 0, 30)
+stopBtn.Position = UDim2.new(0, 10, 0, #animations * 35 + 5)
+stopBtn.Text = "⛔ STOP"
+stopBtn.TextScaled = true
+stopBtn.BackgroundColor3 = Color3.fromRGB(120, 40, 40)
+stopBtn.TextColor3 = Color3.new(1, 1, 1)
+stopBtn.Font = Enum.Font.SourceSans
+
+stopBtn.MouseButton1Click:Connect(function()
+    for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+        track:Stop()
+    end
+end)
+
+local minimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    panel.Visible = not minimized
+    mainFrame.Size = minimized and UDim2.new(0, 260, 0, 40) or UDim2.new(0, 260, 0, fullHeight)
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
