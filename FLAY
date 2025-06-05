@@ -1,0 +1,174 @@
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local flying = false
+local speed = 40
+local minSpeed = 10
+local maxSpeed = 250
+local bv, bg
+local moveVector = Vector3.zero
+local keysPressed = {}
+local HRP
+
+local directions = {
+	[Enum.KeyCode.W] = Vector3.new(0, 0, -1),
+	[Enum.KeyCode.S] = Vector3.new(0, 0, 1),
+	[Enum.KeyCode.A] = Vector3.new(-1, 0, 0),
+	[Enum.KeyCode.D] = Vector3.new(1, 0, 0),
+	[Enum.KeyCode.Space] = Vector3.new(0, 1, 0),
+	[Enum.KeyCode.LeftShift] = Vector3.new(0, -1, 0),
+}
+
+local function updateMoveVector()
+	moveVector = Vector3.zero
+	for key, dir in pairs(directions) do
+		if keysPressed[key] then
+			moveVector += dir
+		end
+	end
+end
+
+local function startFly()
+	if flying then return end
+	if not HRP then return end
+	flying = true
+	bv = Instance.new("BodyVelocity")
+	bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+	bv.Velocity = Vector3.zero
+	bv.P = 1000
+	bv.Parent = HRP
+	bg = Instance.new("BodyGyro")
+	bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+	bg.P = 3000
+	bg.CFrame = HRP.CFrame
+	bg.Parent = HRP
+	RunService:BindToRenderStep("FlyControl", Enum.RenderPriority.Character.Value + 1, function()
+		local camCF = workspace.CurrentCamera.CFrame
+		local dir = camCF:VectorToWorldSpace(moveVector)
+		bv.Velocity = dir.Magnitude > 0 and dir.Unit * speed or Vector3.zero
+		bg.CFrame = camCF
+		local rootCF = HRP.CFrame
+		local lookDir = Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
+		if lookDir.Magnitude > 0.1 then
+			HRP.CFrame = CFrame.new(rootCF.Position, rootCF.Position + lookDir)
+		end
+	end)
+end
+
+local function stopFly()
+	if not flying then return end
+	flying = false
+	if bv then bv:Destroy() end
+	if bg then bg:Destroy() end
+	RunService:UnbindFromRenderStep("FlyControl")
+end
+
+UIS.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if directions[input.KeyCode] then
+		keysPressed[input.KeyCode] = true
+		updateMoveVector()
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+	if directions[input.KeyCode] then
+		keysPressed[input.KeyCode] = nil
+		updateMoveVector()
+	end
+end)
+
+player.CharacterAdded:Connect(function(char)
+	HRP = char:WaitForChild("HumanoidRootPart")
+	if flying then
+		startFly()
+	end
+end)
+
+if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+	HRP = player.Character.HumanoidRootPart
+end
+
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "FlySpeedGui"
+gui.ResetOnSpawn = false
+
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0, 90, 0, 30)
+toggleBtn.Position = UDim2.new(0, 10, 0, 10)
+toggleBtn.Text = "Fly: OFF"
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.TextSize = 18
+toggleBtn.BorderSizePixel = 0
+
+local speedLabel = Instance.new("TextLabel", gui)
+speedLabel.Size = UDim2.new(0, 200, 0, 20)
+speedLabel.Position = UDim2.new(0, 10, 0, 50)
+speedLabel.BackgroundTransparency = 1
+speedLabel.TextColor3 = Color3.new(1, 1, 1)
+speedLabel.Text = "Speed: 40"
+
+local sliderFrame = Instance.new("Frame", gui)
+sliderFrame.Size = UDim2.new(0, 200, 0, 20)
+sliderFrame.Position = UDim2.new(0, 10, 0, 75)
+sliderFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+
+local sliderHandle = Instance.new("Frame", sliderFrame)
+sliderHandle.Size = UDim2.new(speed / maxSpeed, 0, 1, 0)
+sliderHandle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+
+local dragging = false
+
+sliderHandle.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local mousePos = UIS:GetMouseLocation()
+		local barPos = sliderFrame.AbsolutePosition.X
+		local barSize = sliderFrame.AbsoluteSize.X
+		local relativePos = math.clamp(mousePos.X - barPos, 0, barSize)
+		local newScale = relativePos / barSize
+		speed = math.floor(minSpeed + newScale * (maxSpeed - minSpeed))
+		sliderHandle.Size = UDim2.new(newScale, 0, 1, 0)
+		speedLabel.Text = "Speed: " .. speed
+	end
+end)
+
+toggleBtn.MouseButton1Click:Connect(function()
+	if flying then
+		stopFly()
+		toggleBtn.Text = "Fly: OFF"
+	else
+		startFly()
+		toggleBtn.Text = "Fly: ON"
+	end
+end)
+
+local closeBtn = Instance.new("TextButton", gui)
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -40, 0, 10)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextSize = 18
+closeBtn.BorderSizePixel = 0
+
+closeBtn.MouseButton1Click:Connect(function()
+	gui:Destroy()
+	if flying then stopFly() end
+end)
