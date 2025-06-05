@@ -62,4 +62,3 @@ createButton(mainFrame, 40,  "Загрузить юба.lua",   "https://raw.git
 createButton(mainFrame, 95,  "Загрузить mmmmeed",   "https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/mmmmeed")
 createButton(mainFrame, 150, "Загрузить аним",      "https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/аним")
 createButton(mainFrame, 205, "Загрузить pose",      "https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/pose")
-createButton(mainFrame, 260, "Загрузить noclip",    "https://raw.githubusercontent.com/gutgutg/-/refs/heads/main/noclip")
