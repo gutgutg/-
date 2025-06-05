@@ -1,0 +1,206 @@
+for _, v in pairs(game:GetService("CoreGui"):GetChildren()) do
+    if v.Name == "PlayerESP" or v.Name == "ESP_GUI" then
+        v:Destroy()
+    end
+end
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local espFolder = Instance.new("Folder", game:GetService("CoreGui"))
+espFolder.Name = "PlayerESP"
+
+local espEnabled = true
+local showHP = true
+local showDistance = false
+local boxEnabled = false
+local lineEnabled = false
+
+local function createESP(player)
+    if player == LocalPlayer then return end
+
+    local function setup()
+        if not espEnabled then return end
+        local character = player.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+
+        local root = character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character:FindFirstChild("Humanoid")
+
+        local gui = Instance.new("BillboardGui")
+        gui.Name = "PlayerESP"
+        gui.Adornee = root
+        gui.Size = UDim2.new(0, 120, 0, 60)
+        gui.StudsOffset = Vector3.new(0, 3, 0)
+        gui.AlwaysOnTop = true
+        gui.Parent = espFolder
+
+        local nameLabel = Instance.new("TextLabel", gui)
+        nameLabel.Size = UDim2.new(1, 0, 0.33, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = player.Name
+        nameLabel.TextScaled = true
+        nameLabel.Font = Enum.Font.SourceSansBold
+        nameLabel.TextColor3 = Color3.new(1, 1, 1)
+        nameLabel.TextStrokeTransparency = 0
+
+        local hpLabel = Instance.new("TextLabel", gui)
+        hpLabel.Size = UDim2.new(1, 0, 0.33, 0)
+        hpLabel.Position = UDim2.new(0, 0, 0.33, 0)
+        hpLabel.BackgroundTransparency = 1
+        hpLabel.TextScaled = true
+        hpLabel.Font = Enum.Font.SourceSans
+        hpLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        hpLabel.TextStrokeTransparency = 0
+
+        local distLabel = Instance.new("TextLabel", gui)
+        distLabel.Size = UDim2.new(1, 0, 0.33, 0)
+        distLabel.Position = UDim2.new(0, 0, 0.66, 0)
+        distLabel.BackgroundTransparency = 1
+        distLabel.TextScaled = true
+        distLabel.Font = Enum.Font.SourceSans
+        distLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+        distLabel.TextStrokeTransparency = 0
+
+        local box = Drawing.new("Square")
+        box.Thickness = 1
+        box.Filled = false
+        box.Color = Color3.new(1, 1, 1)
+
+        local tracer = Drawing.new("Line")
+        tracer.Thickness = 1.5
+        tracer.Color = Color3.new(1, 1, 1)
+
+        local conn
+        conn = RunService.RenderStepped:Connect(function()
+            if not player or not player.Character or not player.Character:FindFirstChild("Humanoid") or not player.Character:FindFirstChild("HumanoidRootPart") then
+                gui:Destroy()
+                box:Remove()
+                tracer:Remove()
+                conn:Disconnect()
+                return
+            end
+
+            local root = player.Character.HumanoidRootPart
+            local screenPos, onScreen = camera:WorldToViewportPoint(root.Position)
+            local distance = (camera.CFrame.Position - root.Position).Magnitude
+
+            gui.Enabled = espEnabled
+            hpLabel.Text = showHP and ("HP: " .. math.floor(player.Character.Humanoid.Health)) or ""
+            distLabel.Text = showDistance and ("Dist: " .. math.floor(distance)) or ""
+
+            if boxEnabled and onScreen and espEnabled then
+                local size = player.Character:GetExtentsSize()
+                local topLeft = camera:WorldToViewportPoint(root.Position + Vector3.new(-size.X/2, size.Y/2, 0))
+                local bottomRight = camera:WorldToViewportPoint(root.Position + Vector3.new(size.X/2, -size.Y/2, 0))
+
+                box.Position = Vector2.new(topLeft.X, topLeft.Y)
+                box.Size = Vector2.new(math.abs(bottomRight.X - topLeft.X), math.abs(bottomRight.Y - topLeft.Y))
+                box.Visible = true
+            else
+                box.Visible = false
+            end
+
+            if lineEnabled and onScreen and espEnabled then
+                tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+                tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+                tracer.Visible = true
+            else
+                tracer.Visible = false
+            end
+        end)
+    end
+
+    if player.Character then
+        setup()
+    end
+
+    player.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        setup()
+    end)
+end
+
+for _, plr in ipairs(Players:GetPlayers()) do
+    createESP(plr)
+end
+
+Players.PlayerAdded:Connect(createESP)
+
+Players.PlayerRemoving:Connect(function(player)
+    for _, v in pairs(espFolder:GetChildren()) do
+        if v:IsA("BillboardGui") and v.Adornee and player.Character and v.Adornee:IsDescendantOf(player.Character) then
+            v:Destroy()
+        end
+    end
+end)
+
+local screenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+screenGui.Name = "ESP_GUI"
+screenGui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 220, 0, 230)
+frame.Position = UDim2.new(0, 20, 0, 20)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+
+local function makeButton(text, posY)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(1, -20, 0, 30)
+    btn.Position = UDim2.new(0, 10, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextScaled = true
+    btn.Text = text
+    return btn
+end
+
+local toggleBtn = makeButton("Выключить ESP", 10)
+local hpBtn = makeButton("Скрыть HP", 50)
+local distBtn = makeButton("Показать расстояние", 90)
+local boxBtn = makeButton("Включить Box", 130)
+local lineBtn = makeButton("Включить Линии", 170)
+
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeBtn.Text = "✖"
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextScaled = true
+
+toggleBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    toggleBtn.Text = espEnabled and "Выключить ESP" or "Включить ESP"
+end)
+
+hpBtn.MouseButton1Click:Connect(function()
+    showHP = not showHP
+    hpBtn.Text = showHP and "Скрыть HP" or "Показать HP"
+end)
+
+distBtn.MouseButton1Click:Connect(function()
+    showDistance = not showDistance
+    distBtn.Text = showDistance and "Скрыть расстояние" or "Показать расстояние"
+end)
+
+boxBtn.MouseButton1Click:Connect(function()
+    boxEnabled = not boxEnabled
+    boxBtn.Text = boxEnabled and "Выключить Box" or "Включить Box"
+end)
+
+lineBtn.MouseButton1Click:Connect(function()
+    lineEnabled = not lineEnabled
+    lineBtn.Text = lineEnabled and "Выключить Линии" or "Включить Линии"
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+    espFolder:Destroy()
+    espEnabled = false
+end)
