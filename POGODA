@@ -1,0 +1,224 @@
+local player = game.Players.LocalPlayer
+local lighting = game:GetService("Lighting")
+local camera = workspace.CurrentCamera
+local userInputService = game:GetService("UserInputService")
+
+for _, prop in ipairs({"SkyboxBk", "SkyboxDn", "SkyboxFt", "SkyboxLf", "SkyboxRt", "SkyboxUp"}) do
+    lighting:SetAttribute(prop.."_Lock", true)
+end
+
+local daySkybox = {
+    SkyboxBk = "rbxassetid://2710425166",
+    SkyboxDn = "rbxassetid://2710772432",
+    SkyboxFt = "rbxassetid://2710425561",
+    SkyboxLf = "rbxassetid://2710423102",
+    SkyboxRt = "rbxassetid://2710424672", 
+    SkyboxUp = "rbxassetid://2710779585"
+}
+
+local nightSkybox = {
+    SkyboxBk = "rbxassetid://13089111328",
+    SkyboxDn = "rbxassetid://13089110872",
+    SkyboxFt = "rbxassetid://13089110598",
+    SkyboxLf = "rbxassetid://13089110279",
+    SkyboxRt = "rbxassetid://13089109683",
+    SkyboxUp = "rbxassetid://13089111093"
+}
+
+local currentSkybox = daySkybox
+
+local function setSkybox(skybox)
+    currentSkybox = skybox
+    for k,v in pairs(skybox) do
+        lighting[k] = v
+    end
+end
+
+task.spawn(function()
+    while true do
+        for k,v in pairs(currentSkybox) do
+            if lighting[k] ~= v then
+                lighting[k] = v
+            end
+        end
+        task.wait(0.3)
+    end
+end)
+
+local colorEffect = lighting:FindFirstChild("ColorEffect") or Instance.new("ColorCorrectionEffect", lighting)
+colorEffect.Name = "ColorEffect"
+colorEffect.TintColor = Color3.new(1, 1, 1)
+
+local blur = lighting:FindFirstChild("BlurEffect") or Instance.new("BlurEffect", lighting)
+blur.Size = 0
+
+local rainFolder = camera:FindFirstChild("FakeRain") or Instance.new("Folder", camera)
+rainFolder.Name = "FakeRain"
+
+local raining = false
+
+local function removeRain()
+    raining = false
+    for _, v in pairs(rainFolder:GetChildren()) do
+        v:Destroy()
+    end
+end
+
+local function createRain()
+    raining = true
+    coroutine.wrap(function()
+        while raining do
+            for i = 1, 100 do
+                local drop = Instance.new("Part")
+                drop.Size = Vector3.new(0.04, math.random(20,60)/10, 0.04)
+                drop.Anchored = true
+                drop.CanCollide = false
+                drop.Transparency = 0.6
+                drop.Color = Color3.fromRGB(180,180,255)
+                drop.Material = Enum.Material.Neon
+                drop.CastShadow = false
+                drop.Parent = rainFolder
+
+                local speed = math.random(50,100)/10
+                local accel = math.random(3,6)/10
+
+                coroutine.wrap(function()
+                    local pos = camera.CFrame.Position + Vector3.new(math.random(-80,80),50,math.random(-80,80))
+                    drop.Position = pos
+                    for _ = 1, 50 do
+                        if not raining then break end
+                        drop.Position -= Vector3.new(0,speed,0)
+                        speed += accel
+                        task.wait(0.007)
+                    end
+                    drop:Destroy()
+                end)()
+            end
+            task.wait(0.05)
+        end
+    end)()
+end
+
+local function enableFog()
+    lighting.FogStart = 0
+    lighting.FogEnd = 300
+end
+
+local function disableFog()
+    lighting.FogStart = 1e6
+    lighting.FogEnd = 1e6
+end
+
+local function setDay()
+    lighting.ClockTime = 14
+    blur.Size = 0
+    setSkybox(daySkybox)
+end
+
+local function setNight()
+    lighting.ClockTime = 0
+    blur.Size = 2
+    setSkybox(nightSkybox)
+end
+
+local gui = Instance.new("ScreenGui", player.PlayerGui)
+gui.Name = "EnvGui"
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Position = UDim2.new(0.05,0,0.1,0)
+frame.Size = UDim2.new(0,360,0,0)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.BorderSizePixel = 0
+frame.AutomaticSize = Enum.AutomaticSize.Y
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame)
+
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0,24,0,24)
+closeBtn.Position = UDim2.new(1,-30,0,6)
+closeBtn.Text = "×"
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 20
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.BackgroundTransparency = 1
+closeBtn.ZIndex = 2
+closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
+
+local layout = Instance.new("UIListLayout", frame)
+layout.Padding = UDim.new(0,6)
+
+local padding = Instance.new("UIPadding", frame)
+padding.PaddingTop = UDim.new(0,10)
+padding.PaddingBottom = UDim.new(0,10)
+padding.PaddingLeft = UDim.new(0,10)
+padding.PaddingRight = UDim.new(0,10)
+
+local function createTitle(text)
+    local lbl = Instance.new("TextLabel", frame)
+    lbl.Size = UDim2.new(1,0,0,30)
+    lbl.Text = text
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextSize = 18
+    lbl.TextColor3 = Color3.new(1,1,1)
+    lbl.BackgroundTransparency = 1
+    return lbl
+end
+
+local function createButton(text, callback)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(1,0,0,32)
+    btn.Text = text
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 14
+    btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    btn.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", btn)
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+createTitle("🌦️ Погода и Цвета")
+createButton("☁️ Включить туман", enableFog)
+createButton("❌ Выключить туман", disableFog)
+createButton("🌧️ Включить ливень", createRain)
+createButton("❌ Выключить дождь", removeRain)
+createButton("🌙 Включить ночь", setNight)
+createButton("☀️ Включить день", setDay)
+
+createTitle("🎨 Цвета экрана")
+local colors = {
+    {"Красный", Color3.fromRGB(255,70,70)},
+    {"Голубой", Color3.fromRGB(100,180,255)},
+    {"Зелёный", Color3.fromRGB(100,255,100)},
+    {"Жёлтый", Color3.fromRGB(255,255,100)},
+    {"Фиолетовый", Color3.fromRGB(180,100,255)},
+    {"Оранжевый", Color3.fromRGB(255,150,50)},
+    {"Бирюзовый", Color3.fromRGB(50,255,220)},
+    {"Розовый", Color3.fromRGB(255,100,180)},
+    {"Белый", Color3.fromRGB(255,255,255)},
+    {"Сбросить цвет", Color3.new(1,1,1)}
+}
+
+for _, col in pairs(colors) do
+    createButton("🎨 "..col[1], function()
+        colorEffect.TintColor = col[2]
+    end)
+end
+
+userInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.V then
+        gui.Enabled = not gui.Enabled
+    end
+end)
+
+createButton("❌ Закрыть скрипт", function()
+    colorEffect:Destroy()
+    blur:Destroy()
+    removeRain()
+    gui:Destroy()
+    for _, prop in ipairs({"SkyboxBk", "SkyboxDn", "SkyboxFt", "SkyboxLf", "SkyboxRt", "SkyboxUp"}) do
+        lighting:SetAttribute(prop.."_Lock", nil)
+    end
+end)
