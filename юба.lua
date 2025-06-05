@@ -1,9 +1,7 @@
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-
-local lp = Players.LocalPlayer
-local char = lp.Character or lp.CharacterAdded:Wait()
+local LocalPlayer = Players.LocalPlayer
 
 -- === GUI ===
 local gui = Instance.new("ScreenGui", game.CoreGui)
@@ -11,8 +9,8 @@ gui.Name = "AllInOneGUI"
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 300, 0, 300)
-frame.Position = UDim2.new(0.5, -150, 0.5, -150)
+frame.Size = UDim2.new(0, 300, 0, 420) -- увеличил высоту, чтобы вместить полёт и ноуклип
+frame.Position = UDim2.new(0.5, -150, 0.5, -210)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.Active = true
 frame.Draggable = true
@@ -49,75 +47,70 @@ local isCollapsed = false
 local fullSize = frame.Size
 
 collapse.MouseButton1Click:Connect(function()
-    isCollapsed = not isCollapsed
-    if isCollapsed then
-        frame.Size = UDim2.new(fullSize.X.Scale, fullSize.X.Offset, 0, 40)
-        for _, child in pairs(frame:GetChildren()) do
-            if child ~= title and child ~= close and child ~= collapse then
-                child.Visible = false
-            end
-        end
-        collapse.Text = "🗖"
-    else
-        frame.Size = fullSize
-        for _, child in pairs(frame:GetChildren()) do
-            child.Visible = true
-        end
-        collapse.Text = "🗕"
-    end
+	isCollapsed = not isCollapsed
+	if isCollapsed then
+		frame.Size = UDim2.new(fullSize.X.Scale, fullSize.X.Offset, 0, 40)
+		for _, child in pairs(frame:GetChildren()) do
+			if child ~= title and child ~= close and child ~= collapse then
+				child.Visible = false
+			end
+		end
+		collapse.Text = "🗖"
+	else
+		frame.Size = fullSize
+		for _, child in pairs(frame:GetChildren()) do
+			child.Visible = true
+		end
+		collapse.Text = "🗕"
+	end
 end)
 
 close.MouseButton1Click:Connect(function()
-    gui:Destroy()
+	gui:Destroy()
+	if flying then
+		stopFly()
+	end
+	if noclipRunning then
+		stopNoclip()
+	end
 end)
 
--- === Кнопки ===
-local speedBtn = Instance.new("TextButton", frame)
-speedBtn.Size = UDim2.new(1, -20, 0, 40)
-speedBtn.Position = UDim2.new(0, 10, 0, 50)
-speedBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
-speedBtn.TextColor3 = Color3.new(1, 1, 1)
-speedBtn.Font = Enum.Font.SourceSansBold
-speedBtn.TextSize = 18
-speedBtn.Text = "⚡ Включить быстрый бег"
+-- === Кнопки и логика ===
+local y = 40
+local function makeButton(text)
+	local btn = Instance.new("TextButton", frame)
+	btn.Size = UDim2.new(1, -20, 0, 30)
+	btn.Position = UDim2.new(0, 10, 0, y)
+	btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 16
+	btn.Text = text
+	y += 40
+	return btn
+end
 
-local jumpBtn = Instance.new("TextButton", frame)
-jumpBtn.Size = UDim2.new(1, -20, 0, 40)
-jumpBtn.Position = UDim2.new(0, 10, 0, 100)
-jumpBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 90)
-jumpBtn.TextColor3 = Color3.new(1, 1, 1)
-jumpBtn.Font = Enum.Font.SourceSansBold
-jumpBtn.TextSize = 18
-jumpBtn.Text = "🟢 Включить бесконечный прыжок"
+local speedBtn = makeButton("⚡ Включить бег")
+local jumpBtn = makeButton("🟢 Включить прыжок")
+local flyBtn = makeButton("🛫 Включить полёт")
+local noclipBtn = makeButton("Noclip: ВЫКЛ") -- кнопка для ноуклипа
 
-local espBtn = Instance.new("TextButton", frame)
-espBtn.Size = UDim2.new(1, -20, 0, 40)
-espBtn.Position = UDim2.new(0, 10, 0, 150)
-espBtn.BackgroundColor3 = Color3.fromRGB(150, 90, 255)
-espBtn.TextColor3 = Color3.new(1, 1, 1)
-espBtn.Font = Enum.Font.SourceSansBold
-espBtn.TextSize = 18
-espBtn.Text = "🔍 Включить ESP"
-
--- === Слайдер скорости ===
+-- === Слайдеры скорости ===
 local sliderFrame = Instance.new("Frame", frame)
 sliderFrame.Size = UDim2.new(1, -20, 0, 40)
-sliderFrame.Position = UDim2.new(0, 10, 0, 200)
+sliderFrame.Position = UDim2.new(0, 10, 0, y)
 sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-sliderFrame.Active = true -- важное изменение
-sliderFrame.Draggable = false
+y += 50
 
 local sliderBar = Instance.new("Frame", sliderFrame)
 sliderBar.Size = UDim2.new(1, -20, 0, 6)
 sliderBar.Position = UDim2.new(0, 10, 0.5, -3)
 sliderBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-sliderBar.BorderSizePixel = 0
 
 local slider = Instance.new("Frame", sliderBar)
 slider.Size = UDim2.new(0, 10, 0, 16)
 slider.Position = UDim2.new(0, 0, -0.5, 0)
 slider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-slider.BorderSizePixel = 0
 
 local speedLabel = Instance.new("TextLabel", sliderFrame)
 speedLabel.Size = UDim2.new(1, 0, 0, 20)
@@ -128,137 +121,250 @@ speedLabel.Text = "Скорость: 2.5"
 speedLabel.Font = Enum.Font.SourceSans
 speedLabel.TextSize = 16
 
-sliderBar.Parent = sliderFrame
-slider.Parent = sliderBar
-speedLabel.Parent = sliderFrame
+local flySliderFrame = Instance.new("Frame", frame)
+flySliderFrame.Size = UDim2.new(1, -20, 0, 40)
+flySliderFrame.Position = UDim2.new(0, 10, 0.02, y)
+flySliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+y += 50
 
--- === Логика ===
+local flySliderBar = Instance.new("Frame", flySliderFrame)
+flySliderBar.Size = UDim2.new(1, -20, 0, 6)
+flySliderBar.Position = UDim2.new(0, 10, 0.5, -3)
+flySliderBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+
+local flySlider = Instance.new("Frame", flySliderBar)
+flySlider.Size = UDim2.new(0, 10, 0, 16)
+flySlider.Position = UDim2.new(0, 0, -0.5, 0)
+flySlider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+
+local flySpeedLabel = Instance.new("TextLabel", flySliderFrame)
+flySpeedLabel.Size = UDim2.new(1, 0, 0, 20)
+flySpeedLabel.Position = UDim2.new(0, 0, 1, 0)
+flySpeedLabel.BackgroundTransparency = 1
+flySpeedLabel.TextColor3 = Color3.new(1,1,1)
+flySpeedLabel.Text = "Скорость полёта: 40"
+flySpeedLabel.Font = Enum.Font.SourceSans
+flySpeedLabel.TextSize = 16
+
+-- === Логика функций ===
 local speed = 2.5
 local minSpeed = 1
 local maxSpeed = 30
 local speedEnabled = false
 local jumpEnabled = false
-local espEnabled = false
-local espPlayers = {}
 
-local function updateSlider(inputX)
-	local relativeX = math.clamp((inputX - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X, 0, 1)
-	slider.Position = UDim2.new(relativeX, -5, -0.5, 0)
-	speed = minSpeed + (maxSpeed - minSpeed) * relativeX
-	speedLabel.Text = "Скорость: " .. string.format("%.1f", speed)
-end
+local flying = false
+local flySpeed = 40
+local flyMinSpeed = 10
+local flyMaxSpeed = 250
+local bv, bg
+local moveVector = Vector3.zero
+local keysPressed = {}
+local HRP = nil
 
-sliderBar.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		updateSlider(input.Position.X)
-		local moveConn
-		moveConn = UIS.InputChanged:Connect(function(inputMove)
-			if inputMove.UserInputType == Enum.UserInputType.MouseMovement then
-				updateSlider(inputMove.Position.X)
-			end
-		end)
-		UIS.InputEnded:Connect(function(endInput)
-			if endInput.UserInputType == Enum.UserInputType.MouseButton1 then
-				if moveConn then moveConn:Disconnect() end
-			end
-		end)
-	end
-end)
+local directions = {
+	[Enum.KeyCode.W] = Vector3.new(0, 0, -1),
+	[Enum.KeyCode.S] = Vector3.new(0, 0, 1),
+	[Enum.KeyCode.A] = Vector3.new(-1, 0, 0),
+	[Enum.KeyCode.D] = Vector3.new(1, 0, 0),
+	[Enum.KeyCode.Space] = Vector3.new(0, 1, 0),
+	[Enum.KeyCode.LeftShift] = Vector3.new(0, -1, 0),
+}
 
-RunService.RenderStepped:Connect(function(dt)
-	if speedEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") and lp.Character:FindFirstChild("HumanoidRootPart") then
-		local hum = lp.Character.Humanoid
-		local root = lp.Character.HumanoidRootPart
-		if hum.MoveDirection.Magnitude > 0 then
-			local moveVec = hum.MoveDirection.Unit * speed
-			root.CFrame = root.CFrame + (moveVec * dt * 10)
+local function updateMoveVector()
+	moveVector = Vector3.zero
+	for key, dir in pairs(directions) do
+		if keysPressed[key] then
+			moveVector += dir
 		end
 	end
+end
+
+local function startFly()
+	if flying then return end
+	if not HRP then return end
+	flying = true
+	bv = Instance.new("BodyVelocity")
+	bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+	bv.Velocity = Vector3.zero
+	bv.P = 1000
+	bv.Parent = HRP
+	bg = Instance.new("BodyGyro")
+	bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+	bg.P = 3000
+	bg.CFrame = HRP.CFrame
+	bg.Parent = HRP
+	RunService:BindToRenderStep("FlyControl", Enum.RenderPriority.Character.Value + 1, function()
+		local camCF = workspace.CurrentCamera.CFrame
+		local dir = camCF:VectorToWorldSpace(moveVector)
+		bv.Velocity = dir.Magnitude > 0 and dir.Unit * flySpeed or Vector3.zero
+		bg.CFrame = camCF
+		local rootCF = HRP.CFrame
+		local lookDir = Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
+		if lookDir.Magnitude > 0.1 then
+			HRP.CFrame = CFrame.new(rootCF.Position, rootCF.Position + lookDir)
+		end
+	end)
+end
+
+local function stopFly()
+	if not flying then return end
+	flying = false
+	if bv then bv:Destroy() end
+	if bg then bg:Destroy() end
+	RunService:UnbindFromRenderStep("FlyControl")
+end
+
+-- Noclip логика
+local noclipRunning = false
+
+local function setCanCollide(value)
+	local char = LocalPlayer.Character
+	if not char then return end
+	for _, part in pairs(char:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CanCollide = value
+		end
+	end
+end
+
+local function startNoclip()
+	noclipRunning = true
+	noclipBtn.Text = "Noclip: ВКЛ"
+	noclipBtn.BackgroundColor3 = Color3.fromRGB(30, 150, 30)
+end
+
+local function stopNoclip()
+	noclipRunning = false
+	noclipBtn.Text = "Noclip: ВЫКЛ"
+	noclipBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	setCanCollide(true)
+end
+
+local function toggleNoclip()
+	if noclipRunning then
+		stopNoclip()
+	else
+		startNoclip()
+	end
+end
+
+noclipBtn.MouseButton1Click:Connect(toggleNoclip)
+
+RunService.Stepped:Connect(function()
+	if noclipRunning then
+		setCanCollide(false)
+	end
 end)
 
+-- Обновление HRP при спавне персонажа
+LocalPlayer.CharacterAdded:Connect(function(char)
+	HRP = char:WaitForChild("HumanoidRootPart")
+	if flying then
+		startFly()
+	end
+	if noclipRunning then
+		setCanCollide(false)
+	end
+end)
+if LocalPlayer.Character then
+	HRP = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Обработка бег и прыжок
 speedBtn.MouseButton1Click:Connect(function()
 	speedEnabled = not speedEnabled
-	speedBtn.Text = speedEnabled and "⛔ Выключить бег" or "⚡ Включить бег"
-end)
-
-UIS.JumpRequest:Connect(function()
-	if jumpEnabled and lp.Character and lp.Character:FindFirstChildOfClass("Humanoid") then
-		lp.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+	if speedEnabled then
+		speedBtn.Text = "⚡ Выключить бег"
+		LocalPlayer.Character.Humanoid.WalkSpeed = speed
+	else
+		speedBtn.Text = "⚡ Включить бег"
+		LocalPlayer.Character.Humanoid.WalkSpeed = 16
 	end
 end)
 
 jumpBtn.MouseButton1Click:Connect(function()
 	jumpEnabled = not jumpEnabled
-	jumpBtn.Text = jumpEnabled and "⛔ Выключить прыжок" or "🟢 Включить прыжок"
-end)
-
--- === ESP с никнеймами ===
-local function createESP(char)
-	if not char or espPlayers[char] then return end
-
-	local highlight = Instance.new("Highlight")
-	highlight.Adornee = char
-	highlight.FillColor = Color3.fromRGB(0, 255, 0)
-	highlight.OutlineColor = Color3.fromRGB(0, 200, 0)
-	highlight.Parent = gui
-
-	local head = char:FindFirstChild("Head")
-	local billboard
-	if head then
-		billboard = Instance.new("BillboardGui")
-		billboard.Adornee = head
-		billboard.Size = UDim2.new(0, 100, 0, 40)
-		billboard.StudsOffset = Vector3.new(0, 2, 0)
-		billboard.AlwaysOnTop = true
-		billboard.Parent = gui
-
-		local label = Instance.new("TextLabel", billboard)
-		label.Size = UDim2.new(1, 0, 1, 0)
-		label.BackgroundTransparency = 1
-		label.TextColor3 = Color3.fromRGB(0, 255, 0)
-		label.TextStrokeColor3 = Color3.new(0, 0, 0)
-		label.TextStrokeTransparency = 0
-		label.Text = char.Name
-		label.Font = Enum.Font.SourceSansBold
-		label.TextScaled = true
-	end
-
-	espPlayers[char] = {Highlight = highlight, Billboard = billboard}
-end
-
-local function removeESP(char)
-	local esp = espPlayers[char]
-	if esp then
-		if esp.Highlight then esp.Highlight:Destroy() end
-		if esp.Billboard then esp.Billboard:Destroy() end
-		espPlayers[char] = nil
-	end
-end
-
-local function toggleESP()
-	espEnabled = not espEnabled
-	espBtn.Text = espEnabled and "⛔ Выключить ESP" or "🔍 Включить ESP"
-	if espEnabled then
-		for _, p in pairs(Players:GetPlayers()) do
-			if p ~= lp and p.Character then
-				createESP(p.Character)
-			end
-		end
+	if jumpEnabled then
+		jumpBtn.Text = "🔴 Выключить прыжок"
+		LocalPlayer.Character.Humanoid.JumpPower = 100
 	else
-		for char in pairs(espPlayers) do
-			removeESP(char)
-		end
+		jumpBtn.Text = "🟢 Включить прыжок"
+		LocalPlayer.Character.Humanoid.JumpPower = 50
 	end
-end
-
-espBtn.MouseButton1Click:Connect(toggleESP)
-
-Players.PlayerAdded:Connect(function(p)
-	p.CharacterAdded:Connect(function(char)
-		if espEnabled then createESP(char) end
-	end)
 end)
 
-Players.PlayerRemoving:Connect(function(p)
-	if p.Character then removeESP(p.Character) end
+flyBtn.MouseButton1Click:Connect(function()
+	if flying then
+		flyBtn.Text = "🛫 Включить полёт"
+		stopFly()
+	else
+		if HRP then
+			flyBtn.Text = "🛬 Выключить полёт"
+			startFly()
+		end
+	end
+end)
+
+-- Слайдер управления скоростью бега
+local draggingSpeed = false
+sliderBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		draggingSpeed = true
+	end
+end)
+sliderBar.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		draggingSpeed = false
+	end
+end)
+sliderBar.InputChanged:Connect(function(input)
+	if draggingSpeed and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local relativeX = math.clamp(input.Position.X - sliderBar.AbsolutePosition.X, 0, sliderBar.AbsoluteSize.X)
+		local percent = relativeX / sliderBar.AbsoluteSize.X
+		speed = minSpeed + (maxSpeed - minSpeed) * percent
+		speedLabel.Text = ("Скорость: %.1f"):format(speed)
+		if speedEnabled then
+			LocalPlayer.Character.Humanoid.WalkSpeed = speed
+		end
+		slider.Position = UDim2.new(percent, 0, -0.5, 0)
+	end
+end)
+
+-- Слайдер управления скоростью полёта
+local draggingFlySpeed = false
+flySliderBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		draggingFlySpeed = true
+	end
+end)
+flySliderBar.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		draggingFlySpeed = false
+	end
+end)
+flySliderBar.InputChanged:Connect(function(input)
+	if draggingFlySpeed and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local relativeX = math.clamp(input.Position.X - flySliderBar.AbsolutePosition.X, 0, flySliderBar.AbsoluteSize.X)
+		local percent = relativeX / flySliderBar.AbsoluteSize.X
+		flySpeed = flyMinSpeed + (flyMaxSpeed - flyMinSpeed) * percent
+		flySpeedLabel.Text = ("Скорость полёта: %.0f"):format(flySpeed)
+		flySlider.Position = UDim2.new(percent, 0, -0.5, 0)
+	end
+end)
+
+-- Обработка нажатий для полёта
+UIS.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if directions[input.KeyCode] then
+		keysPressed[input.KeyCode] = true
+		updateMoveVector()
+	end
+end)
+UIS.InputEnded:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if directions[input.KeyCode] then
+		keysPressed[input.KeyCode] = false
+		updateMoveVector()
+	end
 end)
