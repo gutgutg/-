@@ -1,0 +1,205 @@
+for _, v in pairs(game:GetService("CoreGui"):GetChildren()) do
+    if v.Name == "ItemESP" then
+        v:Destroy()
+    end
+end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local ItemsFolder = workspace:WaitForChild("Item_Spawns"):WaitForChild("Items")
+
+local espFolder = Instance.new("Folder")
+espFolder.Name = "ItemESP"
+espFolder.Parent = game:GetService("CoreGui")
+
+local espEnabled = true
+local showDistance = true
+
+local function matchesColorSize(color, size, targetColor, targetSize)
+    local colorMatch = math.abs(color.r - targetColor.r) < 0.05 and
+                       math.abs(color.g - targetColor.g) < 0.05 and
+                       math.abs(color.b - targetColor.b) < 0.05
+    local sizeMatch = math.abs(size.X - targetSize.X) < 0.05 and
+                      math.abs(size.Y - targetSize.Y) < 0.05 and
+                      math.abs(size.Z - targetSize.Z) < 0.05
+    return colorMatch and sizeMatch
+end
+
+local function getRealItemName(item)
+    local children = item:GetDescendants()
+    for _, child in ipairs(children) do
+        if child:IsA("MeshPart") or child:IsA("Part") then
+            local c = child.Color
+            local s = child.Size
+
+            if matchesColorSize(c, s, Color3.new(0.639, 0.635, 0.637), Vector3.new(0.872, 0.821, 0.869)) then
+                return "Rokakaka"
+            end
+            if matchesColorSize(c, s, Color3.new(1, 0.349, 0.349), Vector3.new(0.872, 0.822, 0.869)) then
+                return "Pure Rokakaka"
+            end
+            if matchesColorSize(c, s, Color3.new(0.725, 0.717, 0.690), Vector3.new(1.094, 2.277, 1.516)) then
+                return "Ribcage"
+            end
+            if matchesColorSize(c, s, Color3.new(1, 1, 0), Vector3.new(0.796, 0.835, 0.258)) then
+                return "Coin"
+            end
+			if matchesColorSize(c, s, Color3.new(0.431, 0.6, 0.792), Vector3.new(1.093, 0.693, 1.093)) then return "Diamond" end
+            if math.abs(c.r - 0.639) < 0.05 and math.abs(c.g - 0.635) < 0.05 and math.abs(c.b - 0.647) < 0.05 then
+                if matchesColorSize(c, s, c, Vector3.new(0.3475, 0.3479, 0.3479)) then
+                    return "Dead Father's Bells"
+                elseif matchesColorSize(c, s, c, Vector3.new(1.631, 1.194, 1.937)) then
+                    return "Zepellin's Headband"
+                elseif matchesColorSize(c, s, c, Vector3.new(2.542, 2.273, 1.540)) then
+                    return "Gloves"
+                elseif matchesColorSize(c, s, c, Vector3.new(2.204, 1.575, 2.5)) then
+                    return "Hat"
+                elseif matchesColorSize(c, s, c, Vector3.new(1.659, 0.480, 0.340)) then
+                    return "Scroll"
+                end
+            end
+            if matchesColorSize(c, s, Color3.new(0.431, 0.6, 0.792), Vector3.new(1.093, 0.693, 1.093)) then
+                return "Steel Ball"
+            end
+            if matchesColorSize(c, s, Color3.new(1, 1, 1), Vector3.new(1.201, 1.699, 0.690)) then
+                return "Stone Mask"
+            end
+            if matchesColorSize(c, s, Color3.new(0.301961, 0.709804, 0.0313726), Vector3.new(0.855, 0.853, 0.855)) then
+                 return "Steel Ball"
+             end
+
+            if matchesColorSize(c, s, Color3.new(0.352, 0.298, 0.258), Vector3.new(0.896, 0.207, 1.080)) then
+                return "Dio's Diary"
+            end
+            if matchesColorSize(c, s, Color3.new(1, 1, 1), Vector3.new(0.181, 6.223, 1.009)) then
+                return "Arrow"
+            end
+        end
+    end
+    return "Unknown"
+end
+
+local function createESP(item)
+    if not espEnabled then return end
+    local adornee = item:FindFirstChildWhichIsA("BasePart", true)
+    if not adornee then return end
+
+    local tag = Instance.new("BillboardGui")
+    tag.Name = "ItemESP"
+    tag.AlwaysOnTop = true
+    tag.Size = UDim2.new(0, 120, 0, 40)
+    tag.StudsOffset = Vector3.new(0, 2, 0)
+    tag.Adornee = adornee
+    tag.Parent = espFolder
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    nameLabel.Position = UDim2.new(0, 0, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = getRealItemName(item)
+    nameLabel.TextColor3 = Color3.new(1, 1, 0)
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextScaled = true
+    nameLabel.Font = Enum.Font.SourceSansBold
+    nameLabel.Parent = tag
+
+    local distanceLabel = Instance.new("TextLabel")
+    distanceLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    distanceLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    distanceLabel.BackgroundTransparency = 1
+    distanceLabel.TextColor3 = Color3.fromRGB(100, 255, 255)
+    distanceLabel.TextStrokeTransparency = 0
+    distanceLabel.TextScaled = true
+    distanceLabel.Font = Enum.Font.SourceSans
+    distanceLabel.Parent = tag
+
+    local conn
+    conn = RunService.RenderStepped:Connect(function()
+        if not espEnabled then
+            tag:Destroy()
+            conn:Disconnect()
+            return
+        end
+        if adornee and adornee:IsDescendantOf(workspace) and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - adornee.Position).Magnitude
+            if showDistance then
+                distanceLabel.Text = string.format("[%.0f m]", dist)
+            else
+                distanceLabel.Text = ""
+            end
+        else
+            tag:Destroy()
+            conn:Disconnect()
+        end
+    end)
+end
+
+for _, item in ipairs(ItemsFolder:GetChildren()) do
+    createESP(item)
+end
+
+ItemsFolder.ChildAdded:Connect(function(item)
+    task.wait(0.1)
+    createESP(item)
+end)
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ESPControlGui"
+ScreenGui.Parent = game:GetService("CoreGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 130)
+frame.Position = UDim2.new(0, 20, 0, 20)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Parent = ScreenGui
+
+local function createButton(text, posY)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -20, 0, 30)
+    btn.Position = UDim2.new(0, 10, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextScaled = true
+    btn.Text = text
+    btn.Parent = frame
+    return btn
+end
+
+local toggleBtn = createButton("Включить ESP", 10)
+local distanceBtn = createButton("Скрыть дистанцию", 50)
+local closeBtn = createButton("Закрыть", 90)
+
+toggleBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    if espEnabled then
+        toggleBtn.Text = "Выключить ESP"
+        for _, item in ipairs(ItemsFolder:GetChildren()) do
+            createESP(item)
+        end
+    else
+        toggleBtn.Text = "Включить ESP"
+        for _, v in pairs(espFolder:GetChildren()) do
+            v:Destroy()
+        end
+    end
+end)
+
+distanceBtn.MouseButton1Click:Connect(function()
+    showDistance = not showDistance
+    if showDistance then
+        distanceBtn.Text = "Скрыть дистанцию"
+    else
+        distanceBtn.Text = "Показать дистанцию"
+    end
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+    for _, v in pairs(espFolder:GetChildren()) do
+        v:Destroy()
+    end
+    espEnabled = false
+end)
