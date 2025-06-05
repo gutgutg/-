@@ -1,0 +1,305 @@
+for _, v in pairs(game:GetService("CoreGui"):GetChildren()) do
+    if v.Name == "Gui" or v.Name == "ESPMain" then
+        v:Destroy()
+    end
+end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Camera = workspace.CurrentCamera
+local ItemsFolder = workspace:WaitForChild("Item_Spawns"):WaitForChild("Items")
+local VirtualUser = game:GetService("VirtualUser")
+
+local espFolder = Instance.new("Folder")
+espFolder.Name = "ESPMain"
+espFolder.Parent = game:GetService("CoreGui")
+
+local espEnabled = true
+local showDistance = true
+local autoFarmEnabled = false
+local selectedItems = {}
+local fastEPressEnabled = false
+local eSpamEnabled = false
+
+local itemData = {
+    ["Rokakaka"] = {Color3.new(0.639, 0.635, 0.637), Vector3.new(0.872, 0.821, 0.869)},
+    ["Pure Rokakaka"] = {Color3.new(1, 0.349, 0.349), Vector3.new(0.872, 0.822, 0.869)},
+    ["Ribcage"] = {Color3.new(0.725, 0.717, 0.690), Vector3.new(1.094, 2.277, 1.516)},
+    ["Coin"] = {Color3.new(1, 1, 0), Vector3.new(0.796, 0.835, 0.258)},
+    ["Diamond"] = {Color3.new(0.431, 0.6, 0.792), Vector3.new(1.093, 0.693, 1.093)},
+    ["Dead Father's Bells"] = {Color3.new(0.639, 0.635, 0.647), Vector3.new(0.3475, 0.3479, 0.3479)},
+    ["Zepellin's Headband"] = {Color3.new(0.639, 0.635, 0.647), Vector3.new(1.631, 1.194, 1.937)},
+    ["Gloves"] = {Color3.new(0.639, 0.635, 0.647), Vector3.new(2.542, 2.273, 1.540)},
+    ["Hat"] = {Color3.new(0.639, 0.635, 0.647), Vector3.new(2.204, 1.575, 2.5)},
+    ["Scroll"] = {Color3.new(0.639, 0.635, 0.647), Vector3.new(1.659, 0.480, 0.340)},
+    ["Steel Ball"] = {Color3.new(0.301961, 0.709804, 0.0313726), Vector3.new(0.855, 0.853, 0.855)},
+    ["Stone Mask"] = {Color3.new(1, 1, 1), Vector3.new(1.201, 1.699, 0.690)},
+    ["Dio's Diary"] = {Color3.new(0.352, 0.298, 0.258), Vector3.new(0.896, 0.207, 1.080)},
+    ["Arrow"] = {Color3.new(1, 1, 1), Vector3.new(0.181, 6.223, 1.009)}
+}
+
+local function matchesColorSize(color, size, targetColor, targetSize)
+    local colorMatch = math.abs(color.r - targetColor.r) < 0.05 and math.abs(color.g - targetColor.g) < 0.05 and math.abs(color.b - targetColor.b) < 0.05
+    local sizeMatch = math.abs(size.X - targetSize.X) < 0.05 and math.abs(size.Y - targetSize.Y) < 0.05 and math.abs(size.Z - targetSize.Z) < 0.05
+    return colorMatch and sizeMatch
+end
+
+local function getRealItemName(item)
+    for _, child in ipairs(item:GetDescendants()) do
+        if child:IsA("Part") or child:IsA("MeshPart") then
+            for name, props in pairs(itemData) do
+                local targetColor, targetSize = props[1], props[2]
+                if matchesColorSize(child.Color, child.Size, targetColor, targetSize) then
+                    return name
+                end
+            end
+        end
+    end
+    return "Unknown"
+end
+
+local function createESP(item)
+    if not espEnabled then return end
+    local part = item:FindFirstChildWhichIsA("BasePart", true)
+    if not part then return end
+    local gui = Instance.new("BillboardGui")
+    gui.Name = "ESPMain"
+    gui.AlwaysOnTop = true
+    gui.Size = UDim2.new(0, 120, 0, 40)
+    gui.StudsOffset = Vector3.new(0, 2, 0)
+    gui.Adornee = part
+    gui.Parent = espFolder
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0.5, 0)
+    label.BackgroundTransparency = 1
+    label.Text = getRealItemName(item)
+    label.TextColor3 = Color3.new(1, 1, 0)
+    label.TextScaled = true
+    label.Font = Enum.Font.SourceSansBold
+    label.Parent = gui
+
+    local distLabel = Instance.new("TextLabel")
+    distLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    distLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    distLabel.BackgroundTransparency = 1
+    distLabel.TextColor3 = Color3.fromRGB(100, 255, 255)
+    distLabel.TextScaled = true
+    distLabel.Font = Enum.Font.SourceSans
+    distLabel.Parent = gui
+
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if part and part:IsDescendantOf(workspace) and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - part.Position).Magnitude
+            distLabel.Text = showDistance and string.format("[%.0f m]", dist) or ""
+        else
+            gui:Destroy()
+            if connection then connection:Disconnect() end
+        end
+    end)
+end
+
+local function teleportSmoothlyTo(part)
+    return task.spawn(function()
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        local tween = TweenService:Create(hrp, TweenInfo.new(1, Enum.EasingStyle.Linear), {CFrame = part.CFrame + Vector3.new(0, 3, 0)})
+        tween:Play()
+        tween.Completed:Wait()
+    end)
+end
+
+local fastEPressCoroutine
+local eSpamCoroutine
+
+local function startFastEPress()
+    if fastEPressCoroutine then return end
+    fastEPressEnabled = true
+    fastEPressCoroutine = coroutine.create(function()
+        while fastEPressEnabled do
+            VirtualUser:SetKeyDown(Enum.KeyCode.E)
+            task.wait(0.05)
+            VirtualUser:SetKeyUp(Enum.KeyCode.E)
+            task.wait(0.05)
+        end
+        fastEPressCoroutine = nil
+    end)
+    coroutine.resume(fastEPressCoroutine)
+end
+
+local function stopFastEPress()
+    fastEPressEnabled = false
+end
+
+local function startESpam()
+    if eSpamCoroutine then return end
+    eSpamEnabled = true
+    eSpamCoroutine = coroutine.create(function()
+        while eSpamEnabled do
+            for _, item in pairs(ItemsFolder:GetDescendants()) do
+                if item:IsA("ProximityPrompt") and item.Enabled then
+                    pcall(function()
+                        fireproximityprompt(item, 1)
+                    end)
+                end
+            end
+            task.wait(0.1)  -- Увеличенная частота спама (было 0.3)
+        end
+        eSpamCoroutine = nil
+    end)
+    coroutine.resume(eSpamCoroutine)
+end
+
+local function stopESpam()
+    eSpamEnabled = false
+end
+
+local farmCoroutine
+
+local function startAutoFarm()
+    if farmCoroutine then return end
+    farmCoroutine = coroutine.create(function()
+        while autoFarmEnabled do
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if not hrp then
+                task.wait(1)
+                continue
+            end
+
+            local foundAny = false
+            for _, item in pairs(ItemsFolder:GetChildren()) do
+                if not autoFarmEnabled then break end
+                local name = getRealItemName(item)
+                if selectedItems[name] then
+                    local part = item:FindFirstChildWhichIsA("BasePart", true)
+                    if part then
+                        foundAny = true
+                        local tweenComplete = Instance.new("BindableEvent")
+                        task.spawn(function()
+                            local tween = TweenService:Create(hrp, TweenInfo.new(1, Enum.EasingStyle.Linear), {CFrame = part.CFrame + Vector3.new(0, 3, 0)})
+                            tween:Play()
+                            tween.Completed:Wait()
+                            tweenComplete:Fire()
+                        end)
+                        tweenComplete.Event:Wait()
+                        if fastEPressEnabled then
+                            VirtualUser:SetKeyDown(Enum.KeyCode.E)
+                            task.wait(0.05)
+                            VirtualUser:SetKeyUp(Enum.KeyCode.E)
+                        end
+                        task.wait(1.5)
+                    end
+                end
+            end
+            if not foundAny then
+                task.wait(1)
+            end
+        end
+        farmCoroutine = nil
+    end)
+    coroutine.resume(farmCoroutine)
+end
+
+local function stopAutoFarm()
+    autoFarmEnabled = false
+    stopFastEPress()
+end
+
+for _, item in ipairs(ItemsFolder:GetChildren()) do createESP(item) end
+ItemsFolder.ChildAdded:Connect(function(item)
+    task.wait(0.1)
+    createESP(item)
+end)
+
+local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 200, 0, 450)
+frame.Position = UDim2.new(0, 20, 0, 20)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+
+local y = 10
+for name in pairs(itemData) do
+    local toggle = Instance.new("TextButton", frame)
+    toggle.Size = UDim2.new(1, -20, 0, 25)
+    toggle.Position = UDim2.new(0, 10, 0, y)
+    toggle.Text = "❌ " .. name
+    toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    toggle.TextColor3 = Color3.new(1, 1, 1)
+    toggle.MouseButton1Click:Connect(function()
+        selectedItems[name] = not selectedItems[name]
+        toggle.Text = (selectedItems[name] and "✅ " or "❌ ") .. name
+    end)
+    y += 30
+end
+
+local autoBtn = Instance.new("TextButton", frame)
+autoBtn.Size = UDim2.new(1, -20, 0, 30)
+autoBtn.Position = UDim2.new(0, 10, 0, y)
+autoBtn.Text = "🔄 Автотелепорт: выкл"
+autoBtn.MouseButton1Click:Connect(function()
+    autoFarmEnabled = not autoFarmEnabled
+    autoBtn.Text = (autoFarmEnabled and "✅ Автотелепорт: вкл" or "🔄 Автотелепорт: выкл")
+    if autoFarmEnabled then
+        startFastEPress()
+        startAutoFarm()
+    else
+        stopAutoFarm()
+    end
+end)
+y += 40
+
+local espBtn = Instance.new("TextButton", frame)
+espBtn.Size = UDim2.new(1, -20, 0, 30)
+espBtn.Position = UDim2.new(0, 10, 0, y)
+espBtn.Text = "👁 ESP: вкл"
+espBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    espBtn.Text = (espEnabled and "👁 ESP: вкл" or "🚫 ESP: выкл")
+    if not espEnabled then
+        for _, v in pairs(espFolder:GetChildren()) do v:Destroy() end
+    else
+        for _, item in pairs(ItemsFolder:GetChildren()) do
+            createESP(item)
+        end
+    end
+end)
+y += 40
+
+local distBtn = Instance.new("TextButton", frame)
+distBtn.Size = UDim2.new(1, -20, 0, 30)
+distBtn.Position = UDim2.new(0, 10, 0, y)
+distBtn.Text = "📏 Показывать дистанцию"
+distBtn.MouseButton1Click:Connect(function()
+    showDistance = not showDistance
+    distBtn.Text = showDistance and "📏 Показывать дистанцию" or "❌ Скрыть дистанцию"
+end)
+y += 40
+
+local eSpamBtn = Instance.new("TextButton", frame)
+eSpamBtn.Size = UDim2.new(1, -20, 0, 30)
+eSpamBtn.Position = UDim2.new(0, 10, 0, y)
+eSpamBtn.Text = "🔄 Спам E: выкл"
+eSpamBtn.MouseButton1Click:Connect(function()
+    eSpamEnabled = not eSpamEnabled
+    eSpamBtn.Text = (eSpamEnabled and "✅ Спам E: вкл" or "🔄 Спам E: выкл")
+    if eSpamEnabled then
+        startESpam()
+    else
+        stopESpam()
+    end
+end)
+y += 40
+
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(1, -20, 0, 30)
+closeBtn.Position = UDim2.new(0, 10, 0, y)
+closeBtn.Text = "❌ Закрыть GUI"
+closeBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+    autoFarmEnabled = false
+    fastEPressEnabled = false
+    eSpamEnabled = false
+end)
